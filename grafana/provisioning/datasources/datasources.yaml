@@ -4,7 +4,7 @@ datasources:
   type: prometheus
   access: proxy
   orgId: 1
-  url: http://thanos_query_frontend:19090
+  url: http://thanos_frontend:19090
   version: 1
   editable: true
   isDefault: true
