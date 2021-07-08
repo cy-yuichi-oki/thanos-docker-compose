@@ -24,27 +24,27 @@ services:
     ports:
       - "9001:9001"
 
-  prometheus_two:
-    image: prom/prometheus:v2.27.1
-    container_name: prometheus_two
-    user: root
-    volumes:
-      - ./prometheus:/etc/config/
-      - ./data/prometheus/two:/data
-    command:
-      - '--config.file=/etc/config/prometheus_two.yml'
-      - '--storage.tsdb.path=/data'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=2h'
-      - '--web.enable-lifecycle'
-      - '--web.enable-admin-api'
-      - '--web.listen-address=:9002'
-      - '--storage.tsdb.min-block-duration=5m'
-      - '--storage.tsdb.max-block-duration=5m'
-    restart: unless-stopped
-    expose:
-      - 9002
+  # prometheus_two:
+  #   image: prom/prometheus:v2.27.1
+  #   container_name: prometheus_two
+  #   user: root
+  #   volumes:
+  #     - ./prometheus:/etc/config/
+  #     - ./data/prometheus/two:/data
+  #   command:
+  #     - '--config.file=/etc/config/prometheus_two.yml'
+  #     - '--storage.tsdb.path=/data'
+  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
+  #     - '--web.console.templates=/etc/prometheus/consoles'
+  #     - '--storage.tsdb.retention.time=2h'
+  #     - '--web.enable-lifecycle'
+  #     - '--web.enable-admin-api'
+  #     - '--web.listen-address=:9002'
+  #     - '--storage.tsdb.min-block-duration=5m'
+  #     - '--storage.tsdb.max-block-duration=5m'
+  #   restart: unless-stopped
+  #   expose:
+  #     - 9002
 
   thanos_sidecar_one:
     build:
@@ -74,33 +74,33 @@ services:
       - 10902
       - 10901
 
-  thanos_sidecar_two:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
-    container_name: thanos_sidecar_two
-    volumes:
-      - ./prometheus:/etc/config/
-      - ./data/prometheus/two:/data
-    command:
-      - "/wait-for-it.sh"
-      - "prometheus_two:9002"
-      - "--"
-      - "/thanos"
-      - "sidecar"
-      - "--log.level=debug"
-      - "--tsdb.path=/data"
-      - "--prometheus.url=http://prometheus_two:9002"
-      - "--reloader.config-file=/etc/config/prometheus_two.yml"
-      - |
-          --objstore.config=type: S3
-          config:
-            bucket: yoki-tmp
-            endpoint: s3.ap-northeast-1.amazonaws.com
-            insecure: true
-    expose:
-      - 10902
-      - 10901
+  # thanos_sidecar_two:
+  #   build:
+  #     context: ./thanos
+  #     dockerfile: Dockerfile.thanos
+  #   container_name: thanos_sidecar_two
+  #   volumes:
+  #     - ./prometheus:/etc/config/
+  #     - ./data/prometheus/two:/data
+  #   command:
+  #     - "/wait-for-it.sh"
+  #     - "prometheus_two:9002"
+  #     - "--"
+  #     - "/thanos"
+  #     - "sidecar"
+  #     - "--log.level=debug"
+  #     - "--tsdb.path=/data"
+  #     - "--prometheus.url=http://prometheus_two:9002"
+  #     - "--reloader.config-file=/etc/config/prometheus_two.yml"
+  #     - |
+  #         --objstore.config=type: S3
+  #         config:
+  #           bucket: yoki-tmp
+  #           endpoint: s3.ap-northeast-1.amazonaws.com
+  #           insecure: true
+  #   expose:
+  #     - 10902
+  #     - 10901
 
   thanos_querier:
     build:
@@ -162,7 +162,7 @@ services:
       - ./data/compactor:/data
     command:
       - "/wait-for-it.sh"
-      - "s3.ap-northeast-1.amazonaws.com"
+      - "s3.ap-northeast-1.amazonaws.com:443"
       - "--"
       - "/thanos"
       - "compact"
@@ -171,8 +171,8 @@ services:
       - |
         --objstore.config=type: S3
         config:
-          bucket: yoki-tmp
-          endpoint: s3.ap-northeast-1.amazonaws.com
+            bucket: yoki-tmp
+            endpoint: s3.ap-northeast-1.amazonaws.com
             insecure: true
       - "--data-dir=/data"
       - "--consistency-delay=30m"
@@ -190,7 +190,6 @@ services:
     ports:
       - "10922:10902"
 
-
   thanos_store:
     build:
       context: ./thanos
@@ -200,7 +199,7 @@ services:
       - ./data/store:/data
     command:
       - "/wait-for-it.sh"
-      - "s3.ap-northeast-1.amazonaws.com"
+      - "s3.ap-northeast-1.amazonaws.com:443"
       - "--"
       - "/thanos"
       - "store"
