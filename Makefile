@@ -4,7 +4,7 @@ COMPOSE_FILE ?= docker-compose.yml
 # GOPATH            ?= $(shell go env GOPATH)
 # GOBIN             ?= $(firstword $(subst :, ,${GOPATH}))/bin
 
-THANOS_BINARY ?= ./thanos-binary
+THANOS_BINARY ?= ./thanos-binary/thanos
 
 .PHONY: help
 help: ## Displays help.
@@ -24,7 +24,7 @@ up: $(THANOS_BINARY)
 	cp "$(THANOS_BINARY)" ./thanos/
 	@echo ">> copying dashboards to development env"
 	@rm -f ./grafana/provisioning/dashboards/*.json
-	cp $(THANOS_SOURCE)/examples/dashboards/*.json ./grafana/provisioning/dashboards
+	cp ./dashboards/*.json ./grafana/provisioning/dashboards
 	docker-compose -f "$(COMPOSE_FILE)" up -d --build
 
 .PHONY: restart
