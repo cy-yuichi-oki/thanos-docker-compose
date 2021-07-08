@@ -1,14 +1,14 @@
 version: '3.2'
 services:
-  prometheus_one:
+  prometheus:
     image: prom/prometheus:v2.27.1
-    container_name: prometheus_one
+    container_name: prometheus
     user: root
     volumes:
       - ./prometheus:/etc/config/
       - ./data/prometheus/one:/data
     command:
-      - '--config.file=/etc/config/prometheus_one.yml'
+      - '--config.file=/etc/config/prometheus.yml'
       - '--storage.tsdb.path=/data'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
@@ -24,94 +24,32 @@ services:
     ports:
       - "9001:9001"
 
-  # prometheus_two:
-  #   image: prom/prometheus:v2.27.1
-  #   container_name: prometheus_two
-  #   user: root
-  #   volumes:
-  #     - ./prometheus:/etc/config/
-  #     - ./data/prometheus/two:/data
-  #   command:
-  #     - '--config.file=/etc/config/prometheus_two.yml'
-  #     - '--storage.tsdb.path=/data'
-  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
-  #     - '--web.console.templates=/etc/prometheus/consoles'
-  #     - '--storage.tsdb.retention.time=2h'
-  #     - '--web.enable-lifecycle'
-  #     - '--web.enable-admin-api'
-  #     - '--web.listen-address=:9002'
-  #     - '--storage.tsdb.min-block-duration=5m'
-  #     - '--storage.tsdb.max-block-duration=5m'
-  #   restart: unless-stopped
-  #   expose:
-  #     - 9002
-
-  thanos_sidecar_one:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
-    container_name: thanos_sidecar_one
+  thanos_sidecar:
+    image: thanosio/thanos:v0.21.1
+    container_name: thanos_sidecar
     volumes:
       - ./prometheus:/etc/config/
       - ./data/prometheus/one:/data
     command:
-      - "/wait-for-it.sh"
-      - "prometheus_one:9001"
-      - "--"
-      - "/thanos"
       - "sidecar"
       - "--log.level=debug"
       - "--tsdb.path=/data"
-      - "--prometheus.url=http://prometheus_one:9001"
-      - "--reloader.config-file=/etc/config/prometheus_one.yml"
+      - "--prometheus.url=http://prometheus:9001"
+      - "--reloader.config-file=/etc/config/prometheus.yml"
       - |
           --objstore.config=type: S3
           config:
-            bucket: yoki-tmp
+            bucket: techpf-prometheus-thanos
             endpoint: s3.ap-northeast-1.amazonaws.com
             insecure: true
     expose:
       - 10902
       - 10901
 
-  # thanos_sidecar_two:
-  #   build:
-  #     context: ./thanos
-  #     dockerfile: Dockerfile.thanos
-  #   container_name: thanos_sidecar_two
-  #   volumes:
-  #     - ./prometheus:/etc/config/
-  #     - ./data/prometheus/two:/data
-  #   command:
-  #     - "/wait-for-it.sh"
-  #     - "prometheus_two:9002"
-  #     - "--"
-  #     - "/thanos"
-  #     - "sidecar"
-  #     - "--log.level=debug"
-  #     - "--tsdb.path=/data"
-  #     - "--prometheus.url=http://prometheus_two:9002"
-  #     - "--reloader.config-file=/etc/config/prometheus_two.yml"
-  #     - |
-  #         --objstore.config=type: S3
-  #         config:
-  #           bucket: yoki-tmp
-  #           endpoint: s3.ap-northeast-1.amazonaws.com
-  #           insecure: true
-  #   expose:
-  #     - 10902
-  #     - 10901
-
   thanos_querier:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
+    image: thanosio/thanos:v0.21.1
     container_name: thanos_querier
     command:
-      - "/wait-for-it.sh"
-      - "thanos_sidecar_one:10901"
-      - "--"
-      - "/thanos"
       - "query"
       - "--log.level=debug"
       - "--log.format=logfmt"
@@ -127,16 +65,10 @@ services:
     ports:
       - "10902:10902"
 
-  thanos_query_frontend:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
-    container_name: thanos_query_frontend
+  thanos_frontend:
+    image: thanosio/thanos:v0.21.1
+    container_name: thanos_frontend
     command:
-      - "/wait-for-it.sh"
-      - "thanos_querier:10901"
-      - "--"
-      - "/thanos"
       - "query-frontend"
       - "--log.level=debug"
       - "--log.format=logfmt"
@@ -154,24 +86,18 @@ services:
       - thanos_querier
 
   thanos_compactor:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
+    image: thanosio/thanos:v0.21.1
     container_name: thanos_compactor
     volumes:
       - ./data/compactor:/data
     command:
-      - "/wait-for-it.sh"
-      - "s3.ap-northeast-1.amazonaws.com:443"
-      - "--"
-      - "/thanos"
       - "compact"
       - "--log.level=debug"
       - "--log.format=logfmt"
       - |
         --objstore.config=type: S3
         config:
-            bucket: yoki-tmp
+            bucket: techpf-prometheus-thanos
             endpoint: s3.ap-northeast-1.amazonaws.com
             insecure: true
       - "--data-dir=/data"
@@ -191,23 +117,17 @@ services:
       - "10922:10902"
 
   thanos_store:
-    build:
-      context: ./thanos
-      dockerfile: Dockerfile.thanos
+    image: thanosio/thanos:v0.21.1
     container_name: thanos_store
     volumes:
       - ./data/store:/data
     command:
-      - "/wait-for-it.sh"
-      - "s3.ap-northeast-1.amazonaws.com:443"
-      - "--"
-      - "/thanos"
       - "store"
       - "--log.level=debug"
       - |
         --objstore.config=type: S3
         config:
-            bucket: yoki-tmp
+            bucket: techpf-prometheus-thanos
             endpoint: s3.ap-northeast-1.amazonaws.com
             insecure: true
       - "--data-dir=/data"
