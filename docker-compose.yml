@@ -210,30 +210,13 @@ services:
     ports:
       - "80:3000"
 
-  # bucket_web:
-  #   build:
-  #     context: ./thanos
-  #     dockerfile: Dockerfile.thanos
-  #   container_name: bucket_web
-  #   command:
-  #     - "/thanos"
-  #     - "tools"
-  #     - "bucket"
-  #     - "web"
-  #     - |
-  #       --objstore.config=type: S3
-  #       config: 
-  #           bucket: thanos-data-bucket
-  #           access_key: myaccesskey
-  #           secret_key: mysecretkey
-  #           endpoint: minio:9000
-  #           insecure: true
-  #     - "--http-address=0.0.0.0:8080"
-  #     - "--label=monitor"
-  #   expose:
-  #     - 8080
-  #   ports:
-  #     - "8080:8080"
+  exporter:
+    image: prom/node-exporter:v1.1.2
+    container_name: node_exporter
+    user: root
+    ports:
+      - 9100:9100
+      restart: unless-stopped
 
   # debug:
   #   build:
