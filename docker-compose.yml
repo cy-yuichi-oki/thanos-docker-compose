@@ -203,7 +203,7 @@ services:
       - ./grafana/provisioning:/provisioning
     environment:
       - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-evian}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_PATHS_PROVISIONING=/provisioning
     restart: unless-stopped
@@ -216,18 +216,4 @@ services:
     user: root
     ports:
       - 9100:9100
-      restart: unless-stopped
-
-  # debug:
-  #   build:
-  #     context: thanos
-  #     dockerfile: Dockerfile.debug
-  #   container_name: debug
-  #   user: root
-  #   stdin_open: true
-  #   tty: true
-  #   expose:
-  #     - 10902
-  #     - 10901
-  #   ports:
-  #     - "10902:10902"
+    restart: unless-stopped
